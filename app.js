@@ -1,3 +1,5 @@
+let verifyEdit = false;
+
 function captura() {
     const busqueda = document.querySelector('#search');
     busqueda.addEventListener('input', (e) => {
@@ -56,15 +58,19 @@ function taskSend() {
     const buttonTaskForm = document.querySelector('#button-task-form');
     const dataName = document.querySelector('#name');
     const dataDescription = document.querySelector('#description');
+    const dataId = document.querySelector('#taskId');
+    console.log(dataId.value);
     buttonTaskForm.addEventListener('click', e => {
         e.preventDefault();
 
         const postData = {
             name: dataName.value,
-            description: dataDescription.value
+            description: dataDescription.value,
+            id: dataId.value
         }
         //console.log(JSON.stringify(postData));
         postTask(postData);
+
     });
 }
 
@@ -74,6 +80,7 @@ async function postTask(postData) {
         const formData = new FormData();
         formData.append('name', postData.name);
         formData.append('description', postData.description);
+        formData.append('id', postData.id);
         const respuestaServer = await fetch("http://localhost:80/php-ajax/TASK-APP/task-add.php", {
             method: 'POST',
             body: formData
@@ -81,7 +88,10 @@ async function postTask(postData) {
 
         console.log(postData.name + " / " + postData.description);
         let respuestaFinal = await respuestaServer.text();
-        //console.log(respuestaFinal);
+        console.log(respuestaFinal);
+        
+        let idInput = document.querySelector('#taskId');
+        idInput.value = "";
 
         let form = document.querySelector('#task-form');
         form.reset();
@@ -104,7 +114,9 @@ async function fetchTask(){
             template += `
                 <tr TaskId="${task.id}">
                     <td>${task.id}</td>
-                    <td>${task.name}</td>
+                    <td>
+                        <a href="#" class="task-item">${task.name}</a>
+                    </td>
                     <td>${task.desription}</td>
                     <td><button class="btn btn-danger task-delete">Delete</button></td>
                 </tr>
@@ -116,6 +128,7 @@ async function fetchTask(){
     }
 
     deleteTasks();
+    edit();
 }
 
 
@@ -147,8 +160,41 @@ async function removeTask(idDelete) {
     console.log(result);
 }
 
+
+function edit(){
+    const editTask = document.querySelectorAll('.task-item');
+    for(let i=0; i<editTask.length; i++){
+        editTask[i].addEventListener('click', e =>{
+            //console.log('Esta funcionando');
+            const element = editTask[i].parentElement.parentElement.getAttribute('TaskId');
+            console.log(element);
+            queryReturn(element);
+            verifyEdit = true;
+        });
+        
+    }
+}
+
+async function queryReturn(id){
+    let nameInput = document.querySelector('#name');
+    let descriptionInput = document.querySelector('#description');
+    let idInput = document.querySelector('#taskId');
+    let transformId = "id="+id;
+    const respuestaHTTP = await fetch('http://localhost:80/php-ajax/TASK-APP/task-single.php',{
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: transformId
+    });
+    const result = await respuestaHTTP.json();
+    nameInput.value = result.name;
+    descriptionInput.value = result.description;
+    idInput.value = result.id;
+    console.log(result);
+    
+}
 captura();
 taskSend();
 fetchTask();
+edit();
 
 //deleteTasks();
